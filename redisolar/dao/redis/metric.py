@@ -120,6 +120,9 @@ class MetricDaoRedis(MetricDaoBase, RedisDaoBase):
         minute_of_day = self._get_day_minute(time) # pylint: disable=unused-variable
 
         # START Challenge #2
+        # first, make the value that I need to insert.
+        val = MeasurementMinute(value, minute_of_day).__str__()
+        pipeline.zadd(metric_key, {val: minute_of_day})
         # END Challenge #2
 
     def get_recent(self, site_id: int, unit: MetricUnit, time: datetime.datetime,
