@@ -32,3 +32,21 @@ val = MeasurementMinute(value, minute_of_day).__str__()
 pipeline.zadd(metric_key, {val: minute_of_day})
 # END Challenge #2
 ```
+
+## Challenge 3: Using Transactions and Lua Scripting
+Lua is a cool language and I should learn it sometime. It has the power to run its script within redis **atomically**. This challenge asked me to optimize an "update" function. For this, initially, there were 3 network round trips to be made, one for each update, and 3 updates each. The updates were not atomic.
+What I did was - I added 3 scripts into a pipeline, and I executed the pipeline. The 3 lua scripts ensured atomicity during critical sections, and the pipeline improved performance by reducing total round trips.
+
+```
+        reporting_time = datetime.datetime.utcnow().isoformat()
+        self.redis.hset(key, SiteStats.LAST_REPORTING_TIME, reporting_time)
+        self.redis.hincrby(key, SiteStats.COUNT, 1)
+        self.redis.expire(key, WEEK_SECONDS)
+        max_wh = SiteStats.MAX_WH
+        min_wh = SiteStats.MIN_WH
+        max_capacity = SiteStats.MAX_CAPACITY
+        script = CompareAndUpdateScript(pipeline)
+        script.update_if_greater(pipeline, key, max_wh , meter_reading.wh_generated)
+        script.update_if_less(pipeline, key, min_wh , meter_reading.wh_generated)
+        script.update_if_greater(pipeline, key, max_capacity , meter_reading.current_capacity)
+```
