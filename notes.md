@@ -50,3 +50,18 @@ What I did was - I added 3 scripts into a pipeline, and I executed the pipeline.
   script.update_if_less(pipeline, key, min_wh , meter_reading.wh_generated)
   script.update_if_greater(pipeline, key, max_capacity , meter_reading.current_capacity)
 ```
+
+## Challenge 4: Site Capacity Leaderboards
+Before this challenge, I was taught how to use zadd and zrange commands. zrevrange and zrange allow us to get a range of items starting from an index. In the introduction to redis course, I learnt that the `zrank()` command will get me the rank of the item in the sorted set. However, in this situation, the items are going to be added in the reverse order, with the capacity of the site that is MAXIMUM coming last. The site having LEAST capacity will be ranked first position. Hence, when I solved challenge 4, the main goal was to allow the users to check the site capacity and return it in reverse order, so that the person having HIGHEST capacity would be shown a lower value. This was done by using the `zrevrank()` command.
+
+```
+    def get_rank(self, site_id: int, **kwargs) -> float:
+        # START Challenge #4
+        # Remove the following line after you have added code to
+        # get the real rank.
+        client = kwargs.get('pipeline', self.redis)
+        capacity_ranking_key = self.key_schema.capacity_ranking_key()
+        rank = client.zrevrank(capacity_ranking_key, site_id)
+        return rank
+        # END Challenge #4
+```
