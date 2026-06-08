@@ -65,3 +65,22 @@ Before this challenge, I was taught how to use zadd and zrange commands. zrevran
         return rank
         # END Challenge #4
 ```
+
+## Optional Challenge 1: Using Pipelines to Optimize calls:
+Here, I was shown a piece of code that:
+a. Got a bunch of site ids
+b. For each site, used hgetall to find the actual sites in redis for the site ids.
+
+This was using a for loop, which meant multiple round trips - 1 for getting the site_ids, and then inside the for loop, n more to get all n sites. n + 1 total round trips. This challenge asked me to use pipelining to improve the efficiency. 
+I could not use a pipeline for the entire operation, as there were 2 sequential steps, in which step 2 depended on step 1 - I had to know the site_ids before I iterated through them. Hence, I used pipelining only in part 2 - instead of iterating through n times, I used a pipeline, and reduced n network calls to 1 - now, there would be a total of 2 network calls made. I initialize a pipeline AFTER i get the site_ids, and then I add the hgetall() command to the pipeline inside the for-loop, and outside the for-loop, I execute the pipeline.
+
+```
+        # Optional Challenge:
+        client = kwargs.get('pipeline', self.redis)
+        for site_id in site_ids:
+            key = self.key_schema.site_hash_key(site_id)
+            site_hash = client.hgetall(key)
+            sites.add(FlatSiteSchema().load(site_hash))
+        if client != self.redis:
+            client.execute()
+```

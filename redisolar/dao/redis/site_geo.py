@@ -90,10 +90,12 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         """Find all Sites."""
         site_ids = self.redis.zrange(self.key_schema.site_geo_key(), 0, -1)
         sites = set()
-
+        # Optional Challenge:
+        client = kwargs.get('pipeline', self.redis)
         for site_id in site_ids:
             key = self.key_schema.site_hash_key(site_id)
-            site_hash = self.redis.hgetall(key)
+            site_hash = client.hgetall(key)
             sites.add(FlatSiteSchema().load(site_hash))
-
+        if client != self.redis:
+            client.execute()
         return sites
