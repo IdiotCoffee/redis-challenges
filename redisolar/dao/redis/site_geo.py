@@ -66,12 +66,29 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         #
         # Make sure to run any Redis commands against a Pipeline object
         # for better performance.
-        # END Challenge #5
 
-        # Delete the next lines after you've populated a `site_ids`
-        # and `scores` variable.
-        site_ids: List[str] = []
+
+        # Implementation:
+        # step 1: get all the sites within given radius
+        lat = query.coordinate.lat
+        long = query.coordinate.lng
+        key = self.key_schema.site_geo_key()
+        rad = query.radius
+        unit = query.radius_unit.value
+        
+        site_ids = self.redis.georadius(key, long, lat, rad, unit=unit) # type: ignore
+
+        # now, get all the capacity keys:
+        capacity_ranking_key = self.key_schema.capacity_ranking_key()
+        
         scores: Dict[str, float] = {}
+        # find the capacities (using zscore to get the score of the capacity with site_id as the corresponding value):
+        for site_id in site_ids:
+            p.zscore(capacity_ranking_key, site_id)
+        capacities = p.execute()
+        
+        scores = {site_id: capacity for site_id, capacity in zip(site_ids, capacities)}
+        # END Challenge #5
 
         for site_id in site_ids:
             if scores[site_id] and scores[site_id] > CAPACITY_THRESHOLD:

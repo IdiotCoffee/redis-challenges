@@ -84,3 +84,34 @@ I could not use a pipeline for the entire operation, as there were 2 sequential 
         if client != self.redis:
             client.execute()
 ```
+
+
+## Challenge 5: Sites with excess capacity within given Radius
+This one was tricky. We first need to get the key, lat, long, radius and radius_unit from the given query object. Then, use the `georadius()` command of redis-py to return the site_ids of all the sites that are within this radius.
+Next, we need to get the capacities of all the sites within that radius. To do so, we need to use the `zscore` command to get the score of the corresponding site_id for all site_id in site_ids.
+This is essentially a join performed sequentially. We get the correct site_ids, then join the corresponding capacities.
+Next, populate the scores dict - as shown below.
+
+```
+    # START CHALLENGE 5
+    # step 1: get all the sites within given radius
+    lat = query.coordinate.lat
+    long = query.coordinate.lng
+    key = self.key_schema.site_geo_key()
+    rad = query.radius
+    unit = query.radius_unit.value
+    
+    site_ids = self.redis.georadius(key, long, lat, rad, unit=unit) # type: ignore
+
+    # now, get all the capacity keys:
+    capacity_ranking_key = self.key_schema.capacity_ranking_key()
+    
+    scores: Dict[str, float] = {}
+    # find the capacities (using zscore to get the score of the capacity with site_id as the corresponding value):
+    for site_id in site_ids:
+        p.zscore(capacity_ranking_key, site_id)
+    capacities = p.execute()
+    
+    scores = {site_id: capacity for site_id, capacity in zip(site_ids, capacities)}
+    # END Challenge #5
+```
