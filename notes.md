@@ -130,3 +130,8 @@ data = MeterReadingSchema().dump(meter_reading)
 pipeline.xadd(global_key,data, maxlen=self.GLOBAL_MAX_FEED_LENGTH)
 pipeline.xadd(feed_key,data, maxlen=self.GLOBAL_MAX_FEED_LENGTH)
 ```
+
+## Challenge 7: Making a Sliding Window Rate Limiter
+For this challenge, when I hit an API, I add it to a sorted set (so that it is sorted by timestamp). I then remove all the older values, which are older than the stipulated window time, to get the final sorted set of valid requests of a user within a set window. These 2 steps are done in a pipeline.
+
+After the pipeline executes, I find the cardinality of the sorted set (the number of members) which corresponds to the number of requests made by a particular user within a period of time.
