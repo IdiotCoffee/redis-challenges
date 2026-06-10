@@ -115,3 +115,18 @@ Next, populate the scores dict - as shown below.
     scores = {site_id: capacity for site_id, capacity in zip(site_ids, capacities)}
     # END Challenge #5
 ```
+
+## Challenge 6: Using Redis Streams
+This was a relatively simple preoject. When I ingested new data, I had to add it to 2 streams - a local, site specific stream and a global stream. To do so, I had to use the `xadd()` command. I also had to restrict the maximum length using the `maxlen` argument. This part was basically 2 lines of code. The part here that I did find slightly challenging was that I did not know what data I had to load into the redis stream. I had to load the entire meter reading, but I had to use the marshmallow model class instance and load it using that. Once I got this line, the rest was simple - and to get this line, I had to go through `schema.py`
+
+```
+# Get the keys for global and site specific stream:
+global_key = self.key_schema.global_feed_key()
+feed_key = self.key_schema.feed_key(meter_reading.site_id)
+# get the data in the correct format (this part I did not realize existed at first!)
+data = MeterReadingSchema().dump(meter_reading)
+
+#use xadd to add data into the stream
+pipeline.xadd(global_key,data, maxlen=self.GLOBAL_MAX_FEED_LENGTH)
+pipeline.xadd(feed_key,data, maxlen=self.GLOBAL_MAX_FEED_LENGTH)
+```
