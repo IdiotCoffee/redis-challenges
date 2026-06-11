@@ -85,7 +85,7 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         # find the capacities (using zscore to get the score of the capacity with site_id as the corresponding value):
         for site_id in site_ids:
             p.zscore(capacity_ranking_key, site_id)
-        # p.execute can be run later - basically, you need to understand when / where to optimally execute your pipeline.
+        capacities =p.execute()
         
         scores = {site_id: capacity for site_id, capacity in zip(site_ids, capacities)}
         # END Challenge #5
@@ -111,7 +111,7 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         p = self.redis.pipeline(transaction=False)
         for site_id in site_ids:
             key = self.key_schema.site_hash_key(site_id)
-            site_hash = client.hgetall(key)
+            site_hash = p.hgetall(key)
         # to be done in 2 parts, not one - and remove the execute command, caller runs it already.
         site_hashes =p.execute()
         for site_hash in site_hashes:
